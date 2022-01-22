@@ -50,13 +50,13 @@ _start:
 	; if_fizzbuzz:
 		mov eax,5
 		mov edx,3
-		imul rdx
+		mul rdx
 		mov rdi,rax
 		
 		mov rax,rcx
 		cqo
 
-		idiv rdi
+		div rdi
 		cmp rdx,0
 		je cout_fizzbuzz
 
@@ -66,7 +66,7 @@ _start:
 		mov rax,rcx
 		cqo
 
-		idiv rdi
+		div rdi
 		cmp rdx,0
 		je cout_fizz
 
@@ -76,7 +76,7 @@ _start:
 		mov rax,rcx
 		cqo
 
-		idiv rdi
+		div rdi
 		cmp rdx,0
 		jne cout_num
 
