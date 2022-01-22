@@ -25,7 +25,6 @@ bits 64
 %define sys_exit 0x3c
 
 section .text
-
 _start:
 	xor rcx,rcx ; i = 0
 
@@ -44,7 +43,7 @@ _start:
 	add rcx,1 ; i++
 	
 	next_:
-		cmp rcx,33 ; break if i < 33
+		cmp rcx,101 ; break if i < 100
 		je break_
 
 	; if_fizzbuzz:
