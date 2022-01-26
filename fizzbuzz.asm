@@ -7,6 +7,9 @@ extern strlen_count_break
 extern load_num_to_rsi
 extern exit
 
+extern G_set_dec_str_to_buf
+extern G_cout_2
+
 global next_
 global break_
 global cout_fizzbuzz
@@ -91,8 +94,11 @@ _start:
 	
 	cout_num:
 		mov rdi,rcx
-		call load_num_to_rsi
-		call cout
+		call G_set_dec_str_to_buf
+		call G_cout_2
+		
+;		call load_num_to_rsi
+;		call cout
 		jmp cout_LF
 
 	break_:
