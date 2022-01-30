@@ -12,7 +12,7 @@ bits 64
 
 section .text
 _start:
-	xor ecx, ecx ; i = 0
+	xor ecx, ecx ; ecx = 0
 
 	jmp L1
 
@@ -25,39 +25,36 @@ _start:
 	cout_LF:
 		call G_cout_LF
 
-	add ecx, 1 ; i++
+	add ecx, 1 ; ecx++
 	
 	L1:
-		cmp rcx, 101 ; break if i < 100
+		cmp rcx, 31 ; break if ecx < 31
 		je exit
 
 	; if_fizzbuzz:
 		mov edi, 15
-		
+		xor edx, edx
 		mov eax, ecx
-		cqo
-
 		div edi
+
 		or edx, edx
 		je cout_fizzbuzz
 
 	if_fizz:
 		mov edi, 3
-
+		xor edx, edx
 		mov eax, ecx
-		cqo
-
 		div edi
+
 		or edx, edx
 		je cout_fizz
 
 	if_buzz:
 		mov edi, 5
-
+		xor edx, edx
 		mov eax, ecx
-		cqo
-
 		div edi
+
 		or edx, edx
 		jne cout_num
 
@@ -84,10 +81,10 @@ _start:
 		syscall
 
 section .data
-	align 8
+	align 4
 	fizz:
 		db 4,0,0,0,"fizz"
 
-	align 8
+	align 4
 	buzz:
 		db 4,0,0,0,"buzz"
