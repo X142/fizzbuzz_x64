@@ -18,7 +18,6 @@ section .text
 ; edi : 10進数の文字列に変換したい値
 ; >>> OUT
 ; rax : 変換された文字列がストアされた先頭アドレス
-;   null termitated な文字列で、かつ、
 ;   文字列の先頭に文字数が 32bit 値で格納されている
 G_set_dec_str_to_buf:
 	push	rdi
@@ -26,7 +25,7 @@ G_set_dec_str_to_buf:
 	push	rdx
 	push	rcx
 	push	r8
-	
+
 	mov	eax, edi
 	mov	edi, 10
 	mov rsi, L_buf_dec_str + 14
@@ -57,15 +56,16 @@ G_set_dec_str_to_buf:
 	; 1bit 左シフトして、3210に調整してロードしなければならない
 	; 4 - (ecx % 4) bit 左シフトするということ
 	L_loop_1_shl_load:
-		mov edi, ecx
+		mov edi, ecx ; ecxを保存しておく
 
+		; ecx = edx = 4 - (ecx % 4)
 		mov edx, 3
 		and edx, ecx
 		mov ecx, 4
 		sub ecx, edx
-		mov edx, ecx
+		mov edx, ecx ; ecxはこの後元に戻してしまうので、edxに保存しておく
 
-		shl ecx, 3
+		shl ecx, 3 ; 8倍 して左シフト
 		shl r8d, cl
 
 		mov ecx, edi
@@ -78,7 +78,7 @@ G_set_dec_str_to_buf:
 		or eax, eax
 		jne L_loop_1
 
-	add rsi, rdx ; 4 - (ecx % 4) 足すと丁度文字列の先頭になる
+	add rsi, rdx ; 保存しておいたedx = 4 - (ecx % 4) 足すと丁度文字列の先頭になる
 	sub rsi, 4 ; 先頭に文字数(ecx)を入れるので、4引く
 	mov [rsi], ecx
 	mov rax, rsi ; raxを戻り値とすることにした
