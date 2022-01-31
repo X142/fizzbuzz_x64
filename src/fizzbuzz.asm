@@ -3,6 +3,7 @@ global _start
 extern G_set_dec_str_to_buf
 extern G_cout_2
 extern G_cout_LF
+extern G_cout_num
 
 default rel ; 相対アドレッシング
 bits 64
@@ -26,7 +27,7 @@ _start:
 		call G_cout_LF
 
 	add ecx, 1 ; ecx++
-	
+
 	L1:
 		cmp rcx, 31 ; break if ecx < 31
 		je exit
@@ -70,9 +71,7 @@ _start:
 
 	cout_num:
 		mov edi, ecx
-		call G_set_dec_str_to_buf
-		mov rsi, rax
-		call G_cout_2
+		call G_cout_num
 		jmp cout_LF
 
 	exit:

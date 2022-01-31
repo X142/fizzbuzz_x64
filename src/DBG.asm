@@ -1,6 +1,7 @@
 global G_set_dec_str_to_buf
 global G_cout_2
 global G_cout_LF
+global G_cout_num
 
 bits 64
 default rel
@@ -140,6 +141,19 @@ G_cout_LF:
 	mov rsi, LF
 	call G_cout_2
 
+	pop rsi
+
+	ret
+
+G_cout_num:
+	push rsi
+	push rax
+
+	call G_set_dec_str_to_buf
+	mov rsi, rax
+	call G_cout_2
+
+	pop rax
 	pop rsi
 
 	ret
