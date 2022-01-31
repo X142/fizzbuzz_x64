@@ -20,6 +20,11 @@ section .text
 ; >>> OUT
 ; rax : 変換された文字列がストアされた先頭アドレス
 ;   文字列の先頭に文字数が 32bit 値で格納されている
+
+; もしよければ、caller saved であるレジスタは push しない形にすると良いと思う
+; 知ってるかもだけど、Unix系の ABI では、callee saved であるレジスタは以下の通り
+; rbx, rbp, rsp, r12 - r15
+
 G_set_dec_str_to_buf:
 	push	rdi
 	push	rsi
@@ -61,7 +66,7 @@ G_set_dec_str_to_buf:
 	; これは、4 - (ecx % 4) bit 左シフトするということ
 	L_loop_1_shl_load:
 		mov edi, ecx ; 文字数 ecx を保存しておく
-
+%if 0
 		; ecx = edx = 4 - (ecx % 4)
 		mov edx, 3
 		and edx, ecx
@@ -69,6 +74,12 @@ G_set_dec_str_to_buf:
 		sub ecx, edx
 		; ecx はこのあと元に戻すので、edx に保存しておく
 		; 	文字列の先頭のアドレス = rsi + ( 4 - ecx % 4 ) を求めるときに必要になる
+		mov edx, ecx
+%endif
+		; 単なる参考として、以下の方法も見ておいて下さい
+		and ecx, 3
+		neg ecx
+		add ecx, 4	; 上の３行で ecx = 4 - (ecx % 4) を実行している
 		mov edx, ecx
 
 		shl ecx, 3 ; 8 倍して、その分 r8d を左シフト
