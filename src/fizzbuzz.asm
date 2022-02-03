@@ -4,6 +4,9 @@ extern G_set_dec_str_to_buf
 extern G_cout_2
 extern G_cout_LF
 extern G_cout_num
+extern strlen
+extern cout
+extern str_to_num
 
 default rel ; 相対アドレッシング
 bits 64
@@ -13,7 +16,22 @@ bits 64
 
 section .text
 _start:
-	xor ecx, ecx ; ecx = 0
+	push rbp
+	mov rbp, rsp
+
+	mov rdi, [rbp + 8]
+	cmp edi, 1 + 2
+	jne E_arg
+ 
+	mov rdi, [rbp + 24]
+	call str_to_num
+	mov ecx, eax ; 初期値
+
+	mov rdi, [rbp + 32]
+	push rcx
+	call str_to_num
+	pop rcx
+	mov r12d, eax ; 終了値
 
 	jmp L1
 
@@ -26,11 +44,10 @@ _start:
 	cout_LF:
 		call G_cout_LF
 
-	add ecx, 1 ; ecx++
-
+		add ecx, 1 ; インクリメント
 	L1:
-		cmp rcx, 31 ; break if ecx < 31
-		je exit
+		cmp ecx, r12d ; 終了条件
+		jg exit
 
 	; if_fizzbuzz:
 		mov edi, 15
@@ -75,6 +92,9 @@ _start:
 		jmp cout_LF
 
 	exit:
+		mov rsp, rbp
+		pop rbp
+
 		mov eax, sys_exit
 		mov edi, 0
 		syscall
@@ -87,3 +107,14 @@ section .data
 	align 4
 	buzz:
 		db 4,0,0,0,"buzz"
+
+section .text
+E_arg:
+	mov rdi, e_arg
+	call cout
+	call G_cout_LF
+	jmp exit
+
+section .data	
+e_arg:
+	db "the number of arguments is incorrect!", 0

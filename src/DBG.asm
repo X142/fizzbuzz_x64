@@ -2,13 +2,20 @@ global G_set_dec_str_to_buf
 global G_cout_2
 global G_cout_LF
 global G_cout_num
+global strlen
+global cout
+global str_to_num
 
 bits 64
 default rel
 
 %define sys_write 1
 
-; Debug 目的の関数のため、レジスタを保存する
+; Unix系の ABI では、
+; rbx, rbp, rsp, r12 - r15
+; これらが callee saved レジスタであるが、
+; 以下では、Debug 目的でレジスタを全て保存する場合がある
+
 section .text
 ; =========================================
 ; G_set_dec_str_to_buf
@@ -21,11 +28,11 @@ section .text
 ; rax : 変換された文字列がストアされた先頭アドレス
 ;   文字列の先頭に文字数が 32bit 値で格納されている
 G_set_dec_str_to_buf:
-	push	rdi
-	push	rsi
-	push	rdx
-	push	rcx
-	push	r8
+	push	rdi ; for debug
+	push	rsi ; for debug
+	push	rdx ; for debug
+	push	rcx ; for debug
+	push	r8  ; for debug
 
 	mov eax, edi
 	mov edi, 10
@@ -62,13 +69,12 @@ G_set_dec_str_to_buf:
 	L_loop_1_shl_load:
 		mov edi, ecx ; 文字数 ecx を保存しておく
 
-		; ecx = edx = 4 - (ecx % 4)
-		mov edx, 3
-		and edx, ecx
-		mov ecx, 4
-		sub ecx, edx
-		; ecx はこのあと元に戻すので、edx に保存しておく
-		; 	文字列の先頭のアドレス = rsi + ( 4 - ecx % 4 ) を求めるときに必要になる
+		; edx = edx = 4 - (ecx % 4)
+		and ecx, 3
+		neg ecx
+		add ecx, 4
+		; 文字列の先頭のアドレス = rsi + (4 - ecx % 4)
+		; 	を求めるときに必要になるので、edx に保存しておく
 		mov edx, ecx
 
 		shl ecx, 3 ; 8 倍して、その分 r8d を左シフト
@@ -77,7 +83,7 @@ G_set_dec_str_to_buf:
 		mov ecx, edi
 	L_loop_1_load:
 		sub rsi, 4
-		add r8d, 0x30303030
+		or r8d, 0x30303030
 		mov [rsi], r8d
 		xor r8d, r8d
 
@@ -104,10 +110,6 @@ section .data
 L_buf_dec_str:
 	db "00003412341234"
 
-align 4
-LF:
-	db 1,0,0,0,0x0A
-
 section .text
 ; =========================================
 ; G_cout_2
@@ -116,10 +118,10 @@ section .text
 ; rsi : 文字列が格納されているアドレス
 ;   先頭に 4 byte 値で文字列長が格納されている
 G_cout_2:
-	push	rdi
-	push	rdx
-	push	rcx
-	push	rax
+	push	rdi ; for debug
+	push	rdx ; for debug
+	push	rcx ; for debug
+	push	rax ; for debug
 	
 	mov eax, sys_write
 	mov edi, 2 ; fd = 2
@@ -135,16 +137,6 @@ G_cout_2:
 
 	ret
 
-G_cout_LF:
-	push rsi
-
-	mov rsi, LF
-	call G_cout_2
-
-	pop rsi
-
-	ret
-
 G_cout_num:
 	push rsi
 	push rax
@@ -155,5 +147,127 @@ G_cout_num:
 
 	pop rax
 	pop rsi
+
+	ret
+
+G_cout_LF:
+	push rsi
+
+	mov rsi, LF
+	call G_cout_2
+
+	pop rsi
+
+	ret
+
+section .data
+align 4
+LF:
+	db 1,0,0,0,0x0A
+
+section .text
+; =========================================
+; str_to_num
+; 	数字文字列を数値へ変換する
+; <<< IN
+; rdi : 数字文字列のアドレス
+; 	null terminated かつ 10 bytes 以内
+; >>> OUT
+; rax : 変換された数値
+; --- DESTROY
+; rdi, rsi, rcx, rdx, r8, r9, r10
+str_to_num:
+	mov ecx, 10 + 1
+	xor eax, eax ; null
+	cld ; clear DF
+	repne scasb
+
+	neg ecx
+	add ecx, 10 + 1 ; 文字数（null を含む）
+
+	sub rdi, rcx ; rdi を先頭へ戻す
+
+	mov r9d, 10 ; 掛ける数
+	sub ecx, 2 ; 文字数（null を除く） - 1
+
+	js str_to_num_ret
+	je str_to_num_byte_last
+
+	mov esi, ecx
+
+	str_to_num_load:
+		mov r8d, [rdi]
+		sub r8d, 0x30303030
+		add rdi, 4 ; 次の 4 byte へアドレスを進めておく
+		sub esi, 4 ; ecx = esi (= ecx - 4) になったら break
+		jns str_to_num_add
+		movsxd rsi, esi ; 64bit へ符号拡張
+		add rdi, rsi ; 進み過ぎたアドレスを戻す
+		xor esi, esi ; ecx = esi (= 0) になったら break
+	str_to_num_add:
+		mov r10d, 0xff ; この３行は、改善の余地があるか？
+		and r10d, r8d
+		add eax, r10d
+
+		shr r8d, 8
+		mul r9d ; 10倍
+
+		sub ecx, 1
+		cmp ecx, esi
+		jne str_to_num_add
+
+		or esi, esi
+		jne str_to_num_load
+
+	str_to_num_byte_last:
+	; 10^0 = 1 であることより、最後の byte だけは 10倍しない
+	mov r8b, byte [rdi]
+	sub r8b, 0x30
+	mov r10d, 0xff
+	and r10d, r8d
+	add eax, r10d
+	; shr r8b, 8
+	; mul eax, 10 行わない
+
+	str_to_num_ret:
+	ret
+
+section .text
+; strlen rdi
+strlen:
+	push rcx
+
+	mov ecx, 0xffffffff ; length_max = 4 bytes
+	xor eax, eax ; null
+	cld ; clear DF
+	repne scasb
+
+	not ecx ; 文字数（null を除く）
+	mov eax, ecx
+
+	pop rcx
+
+	ret
+
+; cout rdi
+cout:
+	push rdi ; for debug
+	push rsi ; for debug
+	push rdx ; for debug
+	push rcx ; for debug
+	push rax ; for debug
+	
+	mov rsi, rdi
+	call strlen
+	mov edx, eax ; length
+	mov eax, sys_write
+	mov edi, 2 ; fd = 2
+	syscall
+
+	pop rax
+	pop rcx
+	pop rdx
+	pop rsi
+	pop rdi
 
 	ret
