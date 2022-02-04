@@ -31,7 +31,7 @@ _start:
 	push rcx
 	call str_to_num
 	pop rcx
-	mov r12d, eax ; 終了値
+	mov r12d, eax ; 終了値 ; 適当に使わなさそうな r12d を選んだ
 
 	jmp L1
 
@@ -46,7 +46,7 @@ _start:
 
 		add ecx, 1 ; インクリメント
 	L1:
-		cmp ecx, r12d ; 終了条件
+		cmp ecx, r12d ; 終了条件 : break if ecx > 終了値
 		jg exit
 
 	; if_fizzbuzz:

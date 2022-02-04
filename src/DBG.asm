@@ -182,35 +182,33 @@ str_to_num:
 	cld ; clear DF
 	repne scasb
 
-	neg ecx
-	add ecx, 10 + 1 ; 文字数（null を含む）
+	not ecx
+	add ecx, 10 + 1 ; 文字数（null を除く）
 
-	sub rdi, rcx ; rdi を先頭へ戻す
-
-	mov r9d, 10 ; 掛ける数
-	sub ecx, 2 ; 文字数（null を除く） - 1
-
-	js str_to_num_ret
-	je str_to_num_byte_last
+	je str_to_num_ret ; 0文字の場合、0を返す
 
 	mov esi, ecx
+	mov r9d, 10 ; かける数
+
+	sub rdi, rcx ; rdi = 先頭 + 1
+	sub rdi, 5 ; rdi = 先頭 - 4
 
 	str_to_num_load:
+		add rdi, 4
 		mov r8d, [rdi]
 		sub r8d, 0x30303030
-		add rdi, 4 ; 次の 4 byte へアドレスを進めておく
 		sub esi, 4 ; ecx = esi (= ecx - 4) になったら break
 		jns str_to_num_add
-		movsxd rsi, esi ; 64bit へ符号拡張
-		add rdi, rsi ; 進み過ぎたアドレスを戻す
 		xor esi, esi ; ecx = esi (= 0) になったら break
+
 	str_to_num_add:
+		mul r9d ; 10倍
+
 		mov r10d, 0xff ; この３行は、改善の余地があるか？
 		and r10d, r8d
 		add eax, r10d
 
 		shr r8d, 8
-		mul r9d ; 10倍
 
 		sub ecx, 1
 		cmp ecx, esi
@@ -218,16 +216,6 @@ str_to_num:
 
 		or esi, esi
 		jne str_to_num_load
-
-	str_to_num_byte_last:
-	; 10^0 = 1 であることより、最後の byte だけは 10倍しない
-	mov r8b, byte [rdi]
-	sub r8b, 0x30
-	mov r10d, 0xff
-	and r10d, r8d
-	add eax, r10d
-	; shr r8b, 8
-	; mul eax, 10 行わない
 
 	str_to_num_ret:
 	ret
