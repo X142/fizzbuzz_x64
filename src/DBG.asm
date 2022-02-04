@@ -69,7 +69,7 @@ G_set_dec_str_to_buf:
 	L_loop_1_shl_load:
 		mov edi, ecx ; 文字数 ecx を保存しておく
 
-		; edx = edx = 4 - (ecx % 4)
+		; ecx = edx = 4 - (ecx % 4)
 		and ecx, 3
 		neg ecx
 		add ecx, 4
@@ -196,7 +196,7 @@ str_to_num:
 	str_to_num_load:
 		add rdi, 4
 		mov r8d, [rdi]
-		sub r8d, 0x30303030
+		and r8d, 0xcfcfcfcf ; ⇔ sub r8d, 0x30303030
 		sub esi, 4 ; ecx = esi (= ecx - 4) になったら break
 		jns str_to_num_add
 		xor esi, esi ; ecx = esi (= 0) になったら break
@@ -221,10 +221,8 @@ str_to_num:
 	ret
 
 section .text
-; strlen rdi
+; strlen rdi ; rcx, rdi 破壊
 strlen:
-	push rcx
-
 	mov ecx, 0xffffffff ; length_max = 4 bytes
 	xor eax, eax ; null
 	cld ; clear DF
@@ -232,8 +230,6 @@ strlen:
 
 	not ecx ; 文字数（null を除く）
 	mov eax, ecx
-
-	pop rcx
 
 	ret
 
